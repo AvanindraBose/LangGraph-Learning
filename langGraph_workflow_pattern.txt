@@ -1,0 +1,417 @@
+LangGraph — Common LLM Workflow Patterns
+1. LLM Workflows vs Agentic AI
+
+Before understanding LangGraph, it is important to understand the difference between an LLM workflow and an agentic system.
+
+LLM Workflow
+
+An LLM workflow consists of a set of predefined steps.
+
+The developer decides:
+
+Which LLM should be called
+In what order
+Which step comes next
+Where the output of one step goes
+
+Therefore, the workflow is relatively static.
+
+User Input
+    ↓
+   LLM 1
+    ↓
+Output 1
+    ↓
+   LLM 2
+    ↓
+Output 2
+    ↓
+   LLM 3
+    ↓
+Final Output
+
+The execution path has already been designed by the developer.
+
+2. Agentic AI
+
+In an agentic system, the system has more autonomy.
+
+Instead of defining every step beforehand, an agent can decide:
+
+Which tool to use
+Which action to perform
+Which sub-agent to call
+Whether another step is required
+When the task is complete
+User
+ ↓
+Agent
+ ↓
+"What should I do?"
+ ├── Search Web
+ ├── Call Database
+ ├── Ask another Agent
+ ├── Use Calculator
+ └── Finish
+
+The exact path can be determined dynamically based on the task.
+
+Interview Definition
+
+An LLM workflow follows a predefined sequence of steps, while an agentic system can dynamically decide which actions, tools, or agents are required to achieve a goal.
+
+3. Five Common LLM Workflow Patterns
+
+The five major workflow patterns are:
+
+Prompt Chaining
+Router-Based Workflow
+Parallel Workflow
+Orchestrator Workflow
+Evaluator-Optimizer Workflow
+4. Prompt Chaining
+What is Prompt Chaining?
+
+In Prompt Chaining, we interact with an LLM multiple times in a predefined sequence.
+
+The output of one LLM becomes the input to the next LLM.
+
+User Input
+    ↓
+   LLM 1
+    ↓
+Output 1
+    ↓
+   LLM 2
+    ↓
+Output 2
+    ↓
+   LLM 3
+    ↓
+Final Output
+
+Each step performs a specific task.
+
+Example
+
+Suppose we want to generate a technical blog.
+
+Step 1 — Generate Outline
+User Topic
+    ↓
+LLM 1
+    ↓
+Blog Outline
+Step 2 — Generate Content
+Blog Outline
+    ↓
+LLM 2
+    ↓
+Draft Blog
+Step 3 — Review and Improve
+Draft Blog
+    ↓
+LLM 3
+    ↓
+Improved Blog
+
+Complete workflow:
+
+Topic
+ ↓
+Generate Outline
+ ↓
+Generate Draft
+ ↓
+Review / Improve
+ ↓
+Final Blog
+Why Use Prompt Chaining?
+
+It is useful when a large task can be broken into smaller, well-defined tasks.
+
+Interview Point
+
+Prompt chaining breaks a complex task into multiple predefined LLM steps where the output of one step becomes the input to the next.
+
+5. Router-Based Workflow
+What is a Router-Based Workflow?
+
+A router-based workflow uses an LLM to decide which predefined path should handle the request.
+
+The router analyzes the query and sends it to the appropriate LLM or workflow.
+
+                    User Query
+                        ↓
+                     Router
+                        ↓
+            ┌───────────┼───────────┐
+            ↓           ↓           ↓
+         Research     Coding      General
+          LLM          LLM         LLM
+            ↓           ↓           ↓
+            └───────────┼───────────┘
+                        ↓
+                     Response
+
+The available routes are predefined, but the router dynamically decides which route to take.
+
+Example — Research Assistant
+
+Suppose we have:
+
+Research Agent
+Coding Agent
+Math Agent
+General Agent
+
+The user asks:
+
+"Explain how transformer attention works."
+
+The router might classify this as a research/technical question.
+
+User Query
+    ↓
+Router
+    ↓
+Research Agent
+    ↓
+Answer
+
+Another query:
+
+"Write Python code to sort a list."
+
+Could be routed to:
+
+Router
+   ↓
+Coding Agent
+   ↓
+Answer
+Interview Point
+
+A router workflow uses a routing decision to send an input to the most appropriate predefined LLM, agent, or workflow.
+
+6. Parallel Workflow
+What is a Parallel Workflow?
+
+In a parallel workflow, multiple LLM calls execute independently and simultaneously to achieve the same overall goal.
+
+The roles of the LLMs are predefined.
+
+                    User Query
+                        ↓
+              ┌─────────┼─────────┐
+              ↓         ↓         ↓
+           LLM 1     LLM 2     LLM 3
+          Research   Analysis   Summary
+              ↓         ↓         ↓
+              └─────────┼─────────┘
+                        ↓
+                     Combine
+                        ↓
+                    Final Result
+
+The tasks are known beforehand and can run independently.
+
+Example — Product Analysis
+
+Suppose we want to analyze a product.
+
+                 Product
+                    ↓
+       ┌────────────┼────────────┐
+       ↓            ↓            ↓
+   LLM 1          LLM 2        LLM 3
+   Pricing        Reviews      Features
+       ↓            ↓            ↓
+       └────────────┼────────────┘
+                    ↓
+                 LLM 4
+                    ↓
+              Final Report
+
+The first three LLMs can work independently.
+
+Why Use Parallel Workflows?
+
+Parallel execution can:
+
+Reduce overall latency
+Separate responsibilities
+Allow multiple perspectives
+Improve the quality of the final result
+Interview Point
+
+A parallel workflow executes multiple predefined LLM tasks independently and combines their outputs to achieve a common goal.
+
+7. Orchestrator Workflow
+What is an Orchestrator Workflow?
+
+This is more dynamic than a simple parallel workflow.
+
+Here, an LLM acts as an orchestrator and decides which sub-agents are required for the task.
+
+                    User Query
+                        ↓
+                  Orchestrator
+                        ↓
+          ┌─────────────┼─────────────┐
+          ↓             ↓             ↓
+      Sub-Agent A   Sub-Agent B   Sub-Agent C
+          ↓             ↓             ↓
+          └─────────────┼─────────────┘
+                        ↓
+                  Final Response
+
+The key difference is:
+
+Parallel Workflow
+
+The developer decides beforehand:
+
+Use Agent A
+Use Agent B
+Use Agent C
+Orchestrator Workflow
+
+The orchestrator decides dynamically:
+
+"What agents do I need for this task?"
+Example — Research System
+
+User asks:
+
+"Analyze the impact of AI on the healthcare industry."
+
+The orchestrator might decide:
+
+                Orchestrator
+                     ↓
+       ┌─────────────┼─────────────┐
+       ↓             ↓             ↓
+   Researcher     Data Agent    Medical Agent
+       ↓             ↓             ↓
+       └─────────────┼─────────────┘
+                     ↓
+               Final Synthesis
+
+For another query, the orchestrator might only use:
+
+Orchestrator
+     ↓
+Research Agent
+     ↓
+Writer Agent
+
+The required sub-agents are selected based on the task.
+
+Interview Point
+
+An orchestrator workflow uses an LLM to dynamically determine which specialized sub-agents are needed and coordinates their execution.
+
+8. Evaluator-Optimizer Workflow
+What is an Evaluator-Optimizer Workflow?
+
+In this workflow, one LLM generates an output and another LLM evaluates it.
+
+If the output is not good enough, the system sends it back for improvement.
+
+This creates an iterative loop.
+
+             User Input
+                 ↓
+             Generator
+                 ↓
+              Output
+                 ↓
+             Evaluator
+                 ↓
+           Is it good?
+           /         \
+         No           Yes
+         ↓             ↓
+      Improve        Finish
+         ↓
+      Generator
+         ↓
+      Evaluator
+         ↓
+        ...
+Example — Code Generation
+
+Suppose the user asks:
+
+"Write a Python function to find duplicate elements."
+
+Generator
+
+Creates the code:
+
+def find_duplicates(arr):
+    ...
+Evaluator
+
+Checks:
+
+Is the code correct?
+Are edge cases handled?
+Is the complexity reasonable?
+Is the code readable?
+
+If the evaluator says:
+
+Needs improvement
+
+the generator receives the feedback and produces a better version.
+
+Generate
+   ↓
+Evaluate
+   ↓
+Improve
+   ↓
+Evaluate
+   ↓
+Accept
+Interview Point
+
+An evaluator-optimizer workflow uses one component to generate an output and another to evaluate it, repeatedly improving the output until it satisfies the required criteria.
+
+9. Comparison of the Five Workflow Patterns
+Workflow	Main Idea	Dynamic?	Example
+Prompt Chaining	Multiple LLM calls execute sequentially	Mostly No	Outline → Draft → Review
+Router-Based	Router chooses one predefined path	Yes, routing decision	Research vs Coding
+Parallel	Multiple predefined tasks execute simultaneously	Mostly No	Research + Analysis + Summary
+Orchestrator	LLM decides which sub-agents are required	Yes	Researcher + Analyst + Writer
+Evaluator-Optimizer	Generate → Evaluate → Improve	Yes, iterative loop	Generate → Review → Improve
+10. Static Workflow vs Dynamic Agentic System
+
+This is one of the most important concepts to remember.
+
+Static Workflow
+
+The developer defines the path:
+
+A → B → C → D
+
+The LLM performs the tasks, but the workflow itself is predefined.
+
+Dynamic Agentic System
+
+The agent can determine the next action:
+
+             Agent
+               ↓
+        What should I do?
+          /     |      \
+         ↓      ↓       ↓
+      Tool A  Tool B  Agent C
+         ↓      ↓       ↓
+          \     |      /
+               ↓
+          What next?
+
+The agent determines the path based on the current task and state.
