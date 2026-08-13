@@ -1,0 +1,506 @@
+LangGraph — Core Components & Execution Model
+1. Graph
+
+LangGraph follows a graph-based data structure consisting primarily of:
+
+Nodes
+Edges
+State
+Nodes
+
+A node represents a task that needs to be performed as part of the workflow.
+
+For example:
+
+START
+  ↓
+Retrieve Documents
+  ↓
+Call LLM
+  ↓
+Generate Response
+  ↓
+END
+
+Here:
+
+Retrieve Documents → Node
+Call LLM           → Node
+Generate Response  → Node
+
+A node generally receives the current state, performs some operation, and returns an update to the state.
+
+Edges
+
+An edge connects nodes and determines how execution moves through the graph.
+
+Node A
+  ↓
+Node B
+  ↓
+Node C
+
+Edges can also represent conditional routing:
+
+              LLM
+               ↓
+         Is tool required?
+          /           \
+        Yes            No
+         ↓              ↓
+       Tool            END
+
+So, a simple way to remember:
+
+Nodes define what should happen; edges define where execution should go next.
+
+2. State
+
+State is the shared information carried through the workflow.
+
+It represents the information that nodes need to read and update as the graph executes.
+
+For example:
+
+class State(TypedDict):
+    messages: list
+    user_query: str
+    result: str
+
+Conceptually:
+
+             State
+               ↓
+          ┌─────────┐
+          │ Node A  │
+          └────┬────┘
+               ↓
+          Updated State
+               ↓
+          ┌─────────┐
+          │ Node B  │
+          └────┬────┘
+               ↓
+          Updated State
+
+A node doesn't necessarily replace the entire state.
+
+Instead, it can partially update the state.
+
+For example, if the state is:
+
+{
+    user_query: "...",
+    messages: [...],
+    result: ""
+}
+
+Node A might only update:
+
+result: "some result"
+
+The other state fields remain available.
+
+Interview Definition
+
+State is the shared data structure that stores the information required by different nodes during graph execution. Nodes read from the state and can return partial updates to it.
+
+3. Reducers
+
+A reducer defines how updates to a particular state variable should be processed when multiple updates are made to that variable.
+
+This is particularly important when multiple nodes execute in parallel.
+
+For example, suppose we have:
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+The reducer tells LangGraph how updates to messages should be combined.
+
+Conceptually:
+
+             State
+               │
+        ┌──────┴──────┐
+        ↓             ↓
+     Node A          Node B
+        ↓             ↓
+   messages A     messages B
+        \             /
+         \           /
+          ↓         ↓
+          Reducer
+             ↓
+      Updated messages
+
+A reducer can define behavior such as:
+
+Add
+Update
+Merge
+Accumulate
+Important idea
+
+The reducer is associated with a specific state field.
+
+Different fields can have different reducers.
+
+For example:
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+    counter: int
+
+Here, messages has a reducer, while counter may use the default update behavior.
+
+Interview Definition
+
+A reducer defines how updates to a particular state field are combined or applied when the graph processes node outputs.
+
+4. LangGraph Execution Model
+
+LangGraph execution can be understood in these major stages:
+
+Graph Definition
+       ↓
+Compilation
+       ↓
+Invocation
+       ↓
+Super-Steps
+       ↓
+Message Passing
+       ↓
+State Updates
+       ↓
+Node Activation
+       ↓
+Halting
+
+Let's understand each one.
+
+5. Graph Definition
+
+First, we define the graph.
+
+We specify:
+
+State
+Nodes
+Edges
+Conditional edges
+Entry point / START
+END
+
+Example:
+
+START
+  ↓
+Node A
+  ↓
+Node B
+  ↓
+END
+
+At this stage, we're essentially describing:
+
+"What does my workflow look like?"
+
+6. Compilation
+
+After defining the graph, we compile it.
+
+Conceptually:
+
+Graph Definition
+       ↓
+    Compile
+       ↓
+Compiled Graph
+
+Compilation prepares the graph for execution and validates/configures the workflow.
+
+In code, you commonly see:
+
+graph = builder.compile()
+
+The important distinction:
+
+Defining the graph describes the workflow; compiling prepares that workflow for execution.
+
+7. Invocation
+
+Once the graph has been compiled, we provide an initial state/input and execute it.
+
+For example:
+
+result = graph.invoke({
+    "user_query": "What is LangGraph?"
+})
+
+Conceptually:
+
+Compiled Graph
+      +
+Initial State
+      ↓
+   Invocation
+      ↓
+Graph Execution
+
+Invocation starts the execution of the graph.
+
+8. Super-Steps
+
+This is an important concept in LangGraph's execution model.
+
+A super-step represents one phase of graph execution.
+
+A super-step can contain:
+
+A single active node
+Multiple nodes executing in parallel
+
+For example:
+
+             START
+               ↓
+             Node A
+               ↓
+       ┌───────┴───────┐
+       ↓               ↓
+    Node B           Node C
+       ↓               ↓
+       └───────┬───────┘
+               ↓
+             Node D
+               ↓
+              END
+
+The execution can conceptually happen as:
+
+Super-step 1 → Node A
+
+Super-step 2 → Node B + Node C
+                (parallel)
+
+Super-step 3 → Node D
+
+So when your instructor says:
+
+"Super-step is a fancy name for a step."
+
+That's a useful beginner intuition.
+
+More precisely:
+
+A super-step is a phase of execution in which one or more currently active nodes perform their work, potentially in parallel.
+
+9. Message Passing
+
+Nodes communicate through the graph using state updates/messages.
+
+Conceptually:
+
+Node A
+  │
+  │ State update
+  ↓
+Node B
+  │
+  │ State update
+  ↓
+Node C
+
+The state is therefore passed through the workflow.
+
+For example:
+
+Node A
+  ↓
+{
+    result: "Research completed"
+}
+  ↓
+Node B
+  ↓
+{
+    final_answer: "..."
+}
+
+The important idea is:
+
+Nodes don't need to directly call one another. The graph controls the flow of information between them.
+
+10. Partial State Updates
+
+A node generally doesn't need to return the entire state.
+
+Suppose the state is:
+
+{
+    "query": "What is RAG?",
+    "documents": [...],
+    "answer": ""
+}
+
+A retrieval node may return only:
+
+{
+    "documents": [...]
+}
+
+The graph applies this as a partial state update.
+
+Later, an LLM node might return:
+
+{
+    "answer": "RAG stands for..."
+}
+
+So execution looks like:
+
+Initial State
+     ↓
+Retrieval Node
+     ↓
+Partial Update
+     ↓
+LLM Node
+     ↓
+Partial Update
+     ↓
+Final State
+
+This is one of the reasons reducers become important when multiple nodes update the same state field.
+
+11. Node Activation
+
+A node becomes active when the execution reaches that node and it has the information/state required to execute.
+
+For example:
+
+START
+  ↓
+Node A  ← Active
+  ↓
+Node B  ← Activated
+  ↓
+Node C  ← Activated
+
+In a parallel workflow:
+
+              Node A
+                ↓
+        ┌───────┴───────┐
+        ↓               ↓
+     Node B           Node C
+     Active           Active
+
+Both Node B and Node C can become active in the same super-step.
+
+Their outputs can then be combined according to the state's reducer rules.
+
+12. Halting / Termination
+
+The graph eventually needs to stop executing.
+
+Conceptually, execution halts when there is no further work to perform.
+
+The execution can reach:
+
+END
+
+or otherwise reach a point where:
+
+No nodes are active
+There are no pending messages/updates in transit
+No further node execution is possible
+
+Conceptually:
+
+Node A
+  ↓
+Node B
+  ↓
+Node C
+  ↓
+No active nodes
+  +
+No messages in transit
+  ↓
+HALT
+Simple Interview Definition
+
+Graph execution halts when there are no active nodes and no pending messages that can trigger further execution.
+
+13. Complete LangGraph Execution Model
+
+Putting everything together:
+
+             Graph Definition
+                    ↓
+               Compilation
+                    ↓
+               Invocation
+                    ↓
+              Initial State
+                    ↓
+                Super-step
+                    ↓
+             Node Activation
+                    ↓
+              Node Execution
+                    ↓
+           Partial State Updates
+                    ↓
+             Message Passing
+                    ↓
+                Reducers
+                    ↓
+            Updated State
+                    ↓
+              Next Super-step
+                    ↓
+                  ...
+                    ↓
+        No active nodes / messages
+                    ↓
+                  HALT
+14. Complete Mental Model
+
+Remember the LangGraph execution model as:
+
+GRAPH
+ │
+ ├── Nodes       → What should happen?
+ │
+ ├── Edges       → Where should execution go?
+ │
+ └── State       → What information is carried?
+        │
+        └── Reducers → How are state updates combined?
+
+Then:
+
+Define
+  ↓
+Compile
+  ↓
+Invoke
+  ↓
+Execute Super-steps
+  ↓
+Pass State / Messages
+  ↓
+Update State
+  ↓
+Activate Next Nodes
+  ↓
+Repeat
+  ↓
+Halt
+One-Line Interview Answer
+
+LangGraph models an application as a graph of nodes and edges, where nodes perform tasks, edges control execution flow, and shared state carries information between nodes. The compiled graph executes in super-steps, with nodes producing state updates that are processed according to reducers until there is no further work and execution halts.
