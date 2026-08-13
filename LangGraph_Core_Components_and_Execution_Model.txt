@@ -501,6 +501,15 @@ Activate Next Nodes
 Repeat
   ↓
 Halt
+
+So when I say:
+
+"A node returns a partial state update"
+
+I literally mean:
+
+The Python function representing that node returns a dictionary containing only the state fields it wants LangGraph to update.
+
 One-Line Interview Answer
 
 LangGraph models an application as a graph of nodes and edges, where nodes perform tasks, edges control execution flow, and shared state carries information between nodes. The compiled graph executes in super-steps, with nodes producing state updates that are processed according to reducers until there is no further work and execution halts.
