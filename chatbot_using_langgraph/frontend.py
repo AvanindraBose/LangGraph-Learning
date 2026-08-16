@@ -14,7 +14,13 @@ def reset_chat() :
     #  generate a new thread_id
     thread_id = generate_thread_id()
     st.session_state['thread_id'] = thread_id
+    add_thread(st.session_state['thread_id'])
     st.session_state['message_history'] = []
+
+def add_thread(thread_id) :
+    if thread_id not in st.session_state['chat_threads'] :
+        st.session_state['chat_threads'].append(thread_id)
+
 
 # session_state is a dictionary which is used to persist the memeory of frontend.
 if 'message_history' not in st.session_state:
@@ -23,6 +29,12 @@ if 'message_history' not in st.session_state:
 if 'thread_id' not in st.session_state:
     st.session_state['thread_id'] = generate_thread_id()
 
+if 'chat_threads' not in st.session_state:
+    st.session_state['chat_threads'] = []
+
+add_thread(st.session_state['thread_id'])
+
+# ***************************************** Sidebar ******************************************
 
 st.sidebar.title('Lang Graph Chatbot')
 
@@ -31,7 +43,10 @@ if st.sidebar.button('New Chat'):
 
 st.sidebar.header('My Converstaions')
 
-st.sidebar.text(st.session_state['thread_id'])
+for thread_id in st.session_state['chat_threads'] :
+    st.sidebar.button(str(thread_id))
+
+# ******************************************* Main UI ***************************************
 
 for message in st.session_state['message_history']:
     with st.chat_message(message['role']):
