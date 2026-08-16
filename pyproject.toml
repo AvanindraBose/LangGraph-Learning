@@ -11,4 +11,5 @@ dependencies = [
     "langchain-openai>=1.4.3",
     "langgraph>=1.2.10",
     "pydantic>=2.13.4",
+    "streamlit>=1.61.1",
 ]
