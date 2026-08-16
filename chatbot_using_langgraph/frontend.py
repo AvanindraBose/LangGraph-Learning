@@ -21,9 +21,14 @@ if user_input :
         st.text(user_input)
 
 
-    response = chatbot.invoke({'messages' : HumanMessage(content=user_input)},config=CONFIG)
-    ai_response = response['messages'][-1].content
-
-    st.session_state['message_history'].append({'role':'assistant' , 'content' : ai_response})
     with st.chat_message('assistant'):
-        st.text(ai_response)
+        #  Implementing Streaming Using LLM
+
+        ai_response = st.write_stream(
+            message_chunk.content for message_chunk,metadata in chatbot.stream(
+                {'messages' : HumanMessage(content=user_input)},
+                CONFIG,
+                stream_mode="messages"
+            )
+        )
+    st.session_state['message_history'].append({'role':'assistant' , 'content' : ai_response})
