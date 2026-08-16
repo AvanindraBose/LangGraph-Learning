@@ -1,9 +1,10 @@
+import sqlite3
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph,START,END
 from typing import TypedDict,Annotated
-from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.message import add_messages
-from langchain_core.messages import BaseMessage,HumanMessage
+from langchain_core.messages import BaseMessage
 
 class ChatState(TypedDict):
     messages : Annotated[list[BaseMessage] , add_messages]
@@ -18,9 +19,10 @@ def chat_node(state : ChatState) :
 
     return {'messages' : [response]}
 
-#  Checkpointer
+conn = sqlite3.connect(database='chatbot.db',check_same_thread=False)
 
-checkpointer = InMemorySaver()
+#  Checkpointer
+checkpointer = SqliteSaver(conn = conn)
 
 graph = StateGraph(ChatState)
 
@@ -30,3 +32,11 @@ graph.add_edge(START,'chat_node')
 graph.add_edge('chat_node',END)
 
 chatbot = graph.compile(checkpointer=checkpointer)
+
+all_threads = set()
+def retrieve_all_threads():
+
+    for checkpoint in checkpointer.list(None):
+        all_threads.add(checkpoint.config['configurable']['thread_id'])
+
+    return list(all_threads)

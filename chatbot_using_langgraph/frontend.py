@@ -1,6 +1,6 @@
 import streamlit as st
 import uuid
-from langgraph_backend import chatbot
+from langgraph_backend import chatbot,retrieve_all_threads
 from langchain_core.messages import HumanMessage
 
 # ********************************************* Utility Function ************************************
@@ -22,7 +22,12 @@ def add_thread(thread_id) :
         st.session_state['chat_threads'].append(thread_id)
 
 def load_conversation(thread_id):
-    return chatbot.get_state(config = {'configurable' : {'thread_id' : thread_id}}).values['messages']
+    state = chatbot.get_state(config={'configurable': {'thread_id': thread_id}})
+    if state is None:
+        return []
+
+    values = state.values or {}
+    return values.get('messages', [])
 
 
 # session_state is a dictionary which is used to persist the memeory of frontend.
@@ -33,7 +38,7 @@ if 'thread_id' not in st.session_state:
     st.session_state['thread_id'] = generate_thread_id()
 
 if 'chat_threads' not in st.session_state:
-    st.session_state['chat_threads'] = []
+    st.session_state['chat_threads'] = retrieve_all_threads()
 
 add_thread(st.session_state['thread_id'])
 
