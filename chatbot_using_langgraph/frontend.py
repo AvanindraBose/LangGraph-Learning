@@ -81,14 +81,19 @@ if user_input :
     with st.chat_message('user'):
         st.text(user_input)
 
-    CONFIG = {'configurable' : {'thread_id' : st.session_state['thread_id']}}
+    CONFIG = {'configurable' : {'thread_id' : st.session_state['thread_id']} , 
+              'metadata' : {
+                  'thread_id' : st.session_state['thread_id']
+              },
+              'run_name' : 'chat_turn'}
+    
     with st.chat_message('assistant'):
         #  Implementing Streaming Using LLM
 
         ai_response = st.write_stream(
             message_chunk.content for message_chunk,metadata in chatbot.stream(
                 {'messages' : HumanMessage(content=user_input)},
-                CONFIG,
+                config=CONFIG,
                 stream_mode="messages"
             )
         )
