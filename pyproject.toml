@@ -19,4 +19,5 @@ dependencies = [
     "fastmcp>=3.4.7",
     "faiss-cpu>=1.15.0",
     "pypdf>=6.16.2",
+    "langchain-text-splitters>=1.1.2",
 ]
