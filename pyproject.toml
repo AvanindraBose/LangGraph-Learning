@@ -20,4 +20,5 @@ dependencies = [
     "faiss-cpu>=1.15.0",
     "pypdf>=6.16.2",
     "langchain-text-splitters>=1.1.2",
+    "docker>=7.2.0",
 ]
